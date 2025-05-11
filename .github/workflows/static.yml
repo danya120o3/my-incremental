@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incremental Upgrade Tree Game</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #0f0f1a;
+            color: #e0e0e0;
+            padding: 20px;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+        
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            max-width: 1200px;
+            margin: 0 auto;
+            gap: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px;
+            background-color: #1a1a2e;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #4da6ff;
+            text-shadow: 0 0 10px rgba(77, 166, 255, 0.5);
+        }
+        
+        .stats-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 10px;
+            background-color: #1a1a2e;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 120px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #16213e;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+        
+        .stat-value {
+            font-size: 1.2rem;
+            color: #fff;
+            font-weight: bold;
+        }
+        
+        .main-button {
+            display: block;
+            margin: 20px auto;
+            padding: 25px 50px;
+            font-size: 24px;
+            background: linear-gradient(135deg, #4d79ff, #4da6ff);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(77, 166, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.2s;
+            outline: none;
+        }
+        
+        .main-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(77, 166, 255, 0.6);
+        }
+        
+        .main-button:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 10px rgba(77, 166, 255, 0.4);
+        }
+        
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            background-color: #16213e;
+            color: #aaa;
+            border: none;
+            border-radius: 5px 5px 0 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tab.active {
+            background-color: #1f3a63;
+            color: #fff;
+        }
+        
+        .tab-content {
+            display: none;
+            background-color: #1a1a2e;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .upgrades-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+        }
+        
+        .upgrade {
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            background-color: #16213e;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .upgrade:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .upgrade-locked {
+            filter: grayscale(100%);
+            opacity: 0.7;
+        }
+        
+        .upgrade-name {
+            font-weight: bold;
+            color: #4da6ff;
+            margin-bottom: 5px;
+        }
+        
+        .upgrade-description {
+            font-size: 0.85rem;
+            color: #ddd;
+            margin-bottom: 10px;
+            flex-grow: 1;
+        }
+        
+        .upgrade-cost {
+            align-self: flex-end;
+            background-color: #1a1a2e;
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .upgrade-level {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #1a1a2e;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+        }
+        
+        .reset-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .reset-button {
+            padding: 15px 30px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 10px;
+            font-size: 16px;
+        }
+        
+        .reset-button:hover {
+            background-color: #c0392b;
+        }
+        
+        .boost-button {
+            padding: 15px 30px;
+            background-color: #f39c12;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 10px;
+            font-size: 16px;
+        }
+        
+        .boost-button:hover {
+            background-color: #d35400;
+        }
+        
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #27ae60;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 5px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            transform: translateX(200%);
+            transition: transform 0.3s ease-out;
+            z-index: 1000;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .currency-drop {
+            position: absolute;
+            pointer-events: none;
+            animation: currencyFall 1.5s forwards;
+            font-weight: bold;
+            color: #4da6ff;
+        }
+        
+        @keyframes currencyFall {
+            0% {
+                transform: translate(-50%, -100%) scale(1.5);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, 50px) scale(0.5);
+                opacity: 0;
+            }
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+        
+        .modal-content {
+            background-color: #1a1a2e;
+            margin: 10% auto;
+            padding: 20px;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+        
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 10px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+        }
+        
+        .prestige-info {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .rank-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            background: linear-gradient(135deg, #f39c12, #e74c3c);
+            color: white;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 0 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .upgrades-container {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+            
+            .main-button {
+                padding: 20px 40px;
+                font-size: 20px;
+            }
+            
+            .stat {
+                min-width: 100px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .upgrades-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                border-radius: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <header>
+            <h1>Incremental Upgrade Tree</h1>
+            <div id="rank" class="rank-badge">Ранг 1</div>
+        </header>
+        
+        <div class="stats-container">
+            <div class="stat">
+                <div class="stat-label">Очки</div>
+                <div id="points" class="stat-value">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">За клик</div>
+                <div id="perClick" class="stat-value">1</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">В секунду</div>
+                <div id="perSecond" class="stat-value">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Множитель</div>
+                <div id="multiplier" class="stat-value">1x</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Престиж</div>
+                <div id="prestige" class="stat-value">0</div>
+            </div>
+        </div>
+        
+        <button id="mainButton" class="main-button">Клик!</button>
+        
+        <div class="tabs">
+            <button class="tab active" data-tab="basic-upgrades">Базовые улучшения</button>
+            <button class="tab" data-tab="generator-upgrades">Генераторы</button>
+            <button class="tab" data-tab="multiplier-upgrades">Множители</button>
+            <button class="tab" data-tab="prestige-upgrades">Престиж</button>
+            <button class="tab" data-tab="reset-upgrades">Сброс</button>
+            <button class="tab" data-tab="rank-upgrades">Ранги</button>
+            <button class="tab" data-tab="achievements">Достижения</button>
+        </div>
+        
+        <div id="basic-upgrades" class="tab-content active">
+            <h2>Базовые улучшения</h2>
+            <div class="upgrades-container" id="basic-upgrades-container"></div>
+        </div>
+        
+        <div id="generator-upgrades" class="tab-content">
+            <h2>Генераторы</h2>
+            <div class="upgrades-container" id="generator-upgrades-container"></div>
+        </div>
+        
+        <div id="multiplier-upgrades" class="tab-content">
+            <h2>Множители</h2>
+            <div class="upgrades-container" id="multiplier-upgrades-container"></div>
+        </div>
+        
+        <div id="prestige-upgrades" class="tab-content">
+            <h2>Престиж улучшения</h2>
+            <div class="prestige-info">
+                <p>При выполнении престижа вы потеряете все очки и обычные улучшения, но получите престиж-очки!</p>
+                <p>Текущие престиж-очки при сбросе: <span id="prestigeGain">0</span></p>
+                <button id="prestigeButton" class="reset-button">Выполнить престиж</button>
+            </div>
+            <div class="upgrades-container" id="prestige-upgrades-container"></div>
+        </div>
+        
+        <div id="reset-upgrades" class="tab-content">
+            <h2>Улучшения сброса</h2>
+            <div class="reset-container">
+                <p>Сброс даст вам специальные бонусы, но вы потеряете весь прогресс!</p>
+                <button id="softResetButton" class="reset-button">Мягкий сброс</button>
+                <button id="hardResetButton" class="reset-button">Полный сброс</button>
+                <button id="boostButton" class="boost-button">Временный буст (x2 на 30 сек)</button>
+            </div>
+            <div class="upgrades-container" id="reset-upgrades-container"></div>
+        </div>
+        
+        <div id="rank-upgrades" class="tab-content">
+            <h2>Ранги</h2>
+            <div class="prestige-info">
+                <p>Достигните требований для повышения ранга. Каждый ранг дает мощные бонусы!</p>
+                <p>Текущий ранг: <span id="currentRank">1</span> / 20</p>
+                <p>Требования для следующего ранга: <span id="rankRequirement">100</span> престиж-очков</p>
+                <button id="rankUpButton" class="boost-button">Повысить ранг</button>
+            </div>
+            <div class="upgrades-container" id="rank-upgrades-container"></div>
+        </div>
+        
+        <div id="achievements" class="tab-content">
+            <h2>Достижения</h2>
+            <div class="upgrades-container" id="achievements-container"></div>
+        </div>
+    </div>
+    
+    <div id="notification" class="notification"></div>
+    
+    <div id="winModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Поздравляем! Вы прошли игру!</h2>
+            <p>Вы достигли максимального ранга 20 и завершили игру.</p>
+            <p>Для получения сертификата, пожалуйста, перейдите по ссылке ниже:</p>
+            <p><a href="#" id="certificateLink">Получить сертификат</a></p>
+        </div>
+    </div>
+    
+    <script>
+        // Основные переменные игры
+        let game = {
+            points: 0,
+            totalPoints: 0,
+            perClick: 1,
+            perSecond: 0,
+            multiplier: 1,
+            prestigePoints: 0,
+            totalPrestigePoints: 0,
+            rank: 1,
+            hasBoost: false,
+            boostEndTime: 0,
+            achievements: [],
+            
+            // Улучшения
+            basicUpgrades: [],
+            generatorUpgrades: [],
+            multiplierUpgrades: [],
+            prestigeUpgrades: [],
+            resetUpgrades: [],
+            rankUpgrades: []
+        };
+        
+        // Инициализация основных улучшений
+        function initUpgrades() {
+            // Базовые улучшения
+            game.basicUpgrades = [
+                {
+                    id: "basic1",
+                    name: "Улучшенный клик",
+                    description: "Увеличивает очки за клик на 1",
+                    baseCost: 10,
+                    costMultiplier: 1.5,
+                    level: 0,
+                    maxLevel: 50,
+                    effect: () => { game.perClick += 1; },
+                    unlocked: true
+                },
+                {
+                    id: "basic2",
+                    name: "Двойной клик",
+                    description: "Удваивает очки за клик",
+                    baseCost: 100,
+                    costMultiplier: 10,
+                    level: 0,
+                    maxLevel: 5,
+                    effect: () => { game.perClick *= 2; },
+                    unlocked: () => game.basicUpgrades[0].level >= 5
+                },
+                {
+                    id: "basic3",
+                    name: "Эффективность",
+                    description: "Увеличивает все бонусы на 10%",
+                    baseCost: 500,
+                    costMultiplier: 3,
+                    level: 0,
+                    maxLevel: 10,
+                    effect: () => { game.multiplier *= 1.1; },
+                    unlocked: () => game.basicUpgrades[1].level >= 1
+                },
+                {
+                    id: "basic4",
+                    name: "Сила клика",
+                    description: "Увеличивает очки за клик на 5",
+                    baseCost: 1000,
+                    costMultiplier: 2,
+                    level: 0,
+                    maxLevel: 20,
+                    effect: () => { game.perClick += 5; },
+                    unlocked: () => game.totalPoints >= 500
+                },
+                {
+                    id: "basic5",
+                    name: "Мастер кликов",
+                    description: "Увеличивает очки за клик на 50%",
+                    baseCost: 5000,
+                    costMultiplier: 5,
+                    level: 0,
+                    maxLevel: 5,
+                    effect: () => { game.perClick *= 1.5; },
+                    unlocked: () => game.basicUpgrades[3].level >= 5
+                }
+            ];
+            
+            // Генераторы
+            game.generatorUpgrades = [
+                {
+                    id: "gen1",
+                    name: "Авто-Кликер",
+                    description: "Автоматически генерирует 1 очко в секунду",
+                    baseCost: 50,
+                    costMultiplier: 1.7,
+                    level: 0,
+                    maxLevel: 50,
+                    effect: () => { game.perSecond += 1; },
+                    unlocked: true
+                },
+                {
+                    id: "gen2",
+                    name: "Фабрика очков",
+                    description: "Генерирует 5 очков в секунду",
+                    baseCost: 500,
+                    costMultiplier: 1.8,
+                    level: 0,
+                    maxLevel: 30,
+                    effect: () => { game.perSecond += 5; },
+                    unlocked: () => game.generatorUpgrades[0].level >= 10
+                },
+                {
+                    id: "gen3",
+                    name: "Производственная линия",
+                    description: "Генерирует 20 очков в секунду",
+                    baseCost: 3000,
+                    costMultiplier: 2,
+                    level: 0,
+                    maxLevel: 20,
+                    effect: () => { game.perSecond += 20; },
+                    unlocked: () => game.generatorUpgrades[1].level >= 10
+                },
+                {
+                    id: "gen4",
+                    name: "Квантовый генератор",
+                    description: "Генерирует 100 очков в секунду",
+                    baseCost: 20000,
+                    costMultiplier: 2.5,
+                    level: 0,
+                    maxLevel: 10,
+                    effect: () => { game.perSecond += 100; },
+                    unlocked: () => game.generatorUpgrades[2].level >= 10
+                },
+                {
+                    id: "gen5",
+                    name: "Мультиверсумная фабрика",
+                    description: "Генерирует 500 очков в секунду",
+                    baseCost: 100000,
+                    costMultiplier: 3,
+                    level: 0,
+                    maxLevel: 5,
+                    effect: () => { game.perSecond += 500; },
+                    unlocked: () => game.generatorUpgrades[3].level >= 5
+                }
+            ];
+            
+            // Множители
+            game.multiplierUpgrades = [
+                {
+                    id: "mult1",
+                    name: "Базовый множитель",
+                    description: "Увеличивает общий множитель на 0.5",
+                    baseCost: 1000,
+                    costMultiplier: 2.5,
+                    level: 0,
+                    maxLevel: 10,
+                    effect: () => { game.multiplier += 0.5; },
+                    unlocked: true
+                },
+                {
+                    id: "mult2",
+                    name: "Удвоитель",
+                    description: "Удваивает очки в секунду",
+                    baseCost: 10000,
+                    costMultiplier: 5,
+                    level: 0,
+                    maxLevel: 5,
+                    effect: () => { game.perSecond *= 2; },
+                    unlocked: () => game.multiplierUpgrades[0].level >= 3
+                },
+                {
+                    id: "mult3",
+                    name: "Супер множитель",
+                    description: "Увеличивает множитель на 100%",
+                    baseCost: 50000,
+                    costMultiplier: 10,
+                    level: 0,
+                    maxLevel: 3,
+                    effect: () => { game.multiplier *= 2; },
+                    unlocked: () => game.multiplierUpgrades[1].level >= 2
+                },
+                {
+                    id: "mult4",
+                    name: "Синергия",
+                    description: "Увеличивает эффективность всех генераторов на 50%",
+                    baseCost: 100000,
+                    costMultiplier: 20,
+                    level: 0,
+                    maxLevel: 3,
+                    effect: () => { game.perSecond *= 1.5; },
+                    unlocked: () => game.multiplierUpgrades[2].level >= 1
+                },
+                {
+                    id: "mult5",
+                    name: "Максимум мощности",
+                    description: "Увеличивает все бонусы на 200%",
+                    baseCost: 1000000,
+                    costMultiplier: 50,
+                    level: 0,
+                    maxLevel: 1,
+                    effect: () => { 
+                        game.multiplier *= 3; 
+                        game.perClick *= 3;
+                        game.perSecond *= 3;
+                    },
+                    unlocked: () => game.multiplierUpgrades[3].level >= 2
+                }
+            ];
+            
+            // Престиж улучшения
+            game.prestigeUpgrades = [
+                {
+                    id: "prest1",
+                    name: "Стартовый буст",
+                    description: "Начинайте с 10 очками за клик",
+                    baseCost: 1,
+                    costMultiplier: 0,
+                    level: 0,
+                    maxLevel: 1,
+                    effect: () => {},
+                    effectOnPrestige: () => { game.perClick = 10; },
+                    unlocked: true,
+                    currency: "prestige"
+                },
+                {
+                    id: "prest2",
+                    name: "Престиж-множитель",
+                    description: "Увеличивает множитель на 0.5 за каждый уровень",
+                    baseCost: 3,
+                    costMultiplier: 1.5,
+                    level: 0,
+                    maxLevel: 10,
+                    effect: () => { game.multiplier += 0.5; },
+                    unlocked: true,
+                    currency: "prestige"
+                },
+                {
+                    id: "prest3",
+                    name: "Авто-генератор",
+                    description: "Начинайте с 10 очками в секунду",
+                    baseCost: 5,
+                    costMultiplier: 0,
+                    level: 0,
+                    maxLevel: 1,
+                    effect: () => {},
+                    effectOnPrestige: () => { game.perSecond = 10; },
+                    unlocked: () => game.prestigePoints >= 3,
+                    currency: "prestige"
+                },
+                {
+                    id: "prest4",
+                    name: "Престиж-бустер",
+                    description: "Увеличивает получение престиж-очков на 50%",
+                    baseCost: 10,
+                    costMultiplier: 2,
+                    level: 0,
+                    maxLevel: 5,
+                    effect: () => {},
+                    unlocked: () => game.prestigePoints >= 5,
+                    currency: "prestige"
+                },
+                {
+                    id: "prest5",
+                    name: "Мастер престижа",
+                    description: "Все производство увеличивается на 100%",
+                    baseCost: 25,
+                    costMultiplier: 0,
+                    level: 0,
+                    maxLevel: 1,
+                    effect: () => { 
+                        game.multiplier *= 2; 
+                        game.perClick *= 2;
+                        game.perSecond *= 2;
+                    },
+                    unlocked: () => game.prestigePoints >= 20,
+                    currency: "prestige"
+                }
+            ];
+            
+            // Улучшения сброса
+            game.resetUpgrades = [
+                {
+                    id: "reset1",
+                    name: "Глобальный множитель",
+                    description: "Увеличивает все множители на 2x навсегда",
+                    baseCost: 5,
+                    costMultiplier: 0,
+                    level: 0,
+                    maxLevel: 1,
+                    effect: () => { game.multiplier *= 2; },
+                    unlocked: true,
+                    currency: "prestige"
+                },
+                {
+                    id: "reset2",
+                    name: "Автоматический престиж",
+                    description: "Автоматически выполняет престиж при достижении оптимальных условий",
+                    baseCost: 20,
+                    costMultiplier: 0,
+                    level: 0,
+                    maxLevel: 1,
+                    effect: () => {},
+                    unlocked: () => game.rank >= 3,
+                    currency: "prestige"
+                },
+                {
+                    id: "reset3",
+                    name: "Ускоритель времени",
+                    description: "Игра работает на 50% быстрее",
+                    baseCost: 30,
+                    costMultiplier: 0,
+                    level: 0,
+                    maxLevel: 1,
+                    effect: () => {},
+                    unlocked: () => game.rank >= 4,
+                    currency: "prestige"
+                },
+                {
+                    id: "reset4",
+                    name: "Автоматический ранг",
+                    description: "Автоматически повышает ранг, когда возможно",
+                    baseCost: 50,
+                    costMultiplier: 0,
+                    level: 0,
+                    maxLevel: 1,
+                    effect: () => {},
+                    unlocked: () => game.rank >= 5,
+                    currency: "prestige"
+                },
+                {
+                    id: "reset5",
+                    name: "Мастер Вселенной",
+                    description: "Утраивает все бонусы",
+                    baseCost: 100,
+                    costMultiplier: 0,
+                    level: 0,
+                    maxLevel: 1,
+                    effect: () => { 
+                        game.multiplier *= 3; 
+                        game.perClick *= 3;
+                        game.perSecond *= 3;
+                    },
+                    unlocked: () => game.rank >= 10,
+                    currency: "prestige"
+                }
+            ];
+            
+            // Улучшения рангов
+            game.rankUpgrades = [
+                {
+                    id: "rank1",
+                    name: "Ранг 2 бонус",
+                    description: "Увеличивает множитель на 2x",
+                    baseCost: 0,
+                    level: 1,
+                    maxLevel: 1,
+                    requiredRank: 2,
+                    effect: () => { game.multiplier *= 2; },
+                    unlocked: () => game.rank >= 2
+                },
+                {
+                    id: "rank2",
+                    name: "Ранг 3 бонус",
+                    description: "Увеличивает очки за клик на 200%",
+                    baseCost: 0,
+                    level: 1,
+                    maxLevel: 1,
+                    requiredRank: 3,
+                    effect: () => { game.perClick *= 3; },
+                    unlocked: () => game.rank >= 3
+                },
+                {
+                    id: "rank3",
+                    name: "Ранг 4 бонус",
+                    description: "Увеличивает генерацию на 300%",
+                    baseCost: 0,
+                    level: 1,
+                    maxLevel: 1,
+                    requiredRank: 4,
+                    effect: () => { game.perSecond *= 4; },
+                    unlocked: () => game.rank >= 4
+                },
+                {
+                    id: "rank4",
+                    name: "Ранг 5 бонус",
+                    description: "Все престиж-бонусы увеличены на 50%",
+                    baseCost: 0,
+                    level: 1,
+                    maxLevel: 1,
+                    requiredRank: 5,
+                    effect: () => {},
+                    unlocked: () => game.rank >= 5
+                },
+                {
+                    id: "rank5",
+                    name: "Ранг 10 бонус",
+                    description: "Десятикратный множитель всех бонусов",
+                    baseCost: 0,
+                    level: 1,
+                    maxLevel: 1,
+                    requiredRank: 10,
+                    effect: () => { 
+                        game.multiplier *= 10; 
+                        game.perClick *= 10;
+                        game.perSecond *= 10;
+                    },
+                    unlocked: () => game.rank >= 10
+                }
+            ];
+            
+            // Достижения
+            game.achievements = [
+                {
+                    id: "ach1",
+                    name: "Первый шаг",
+                    description: "Набрать 100 очков",
+                    unlocked: false,
+                    condition: () => game.totalPoints >= 100,
+                    reward: () => { game.multiplier += 0.1; }
+                },
+                {
+                    id: "ach2",
+                    name: "Сотня улучшений",
+                    description: "Купить 100 улучшений",
+                    unlocked: false,
+                    condition: () => {
+                        let totalUpgrades = 0;
+                        for (let upgrade of game.basicUpgrades) totalUpgrades += upgrade.level;
+                        for (let upgrade of game.generatorUpgrades) totalUpgrades += upgrade.level;
+                        for (let upgrade of game.multiplierUpgrades) totalUpgrades += upgrade.level;
+                        return totalUpgrades >= 100;
+                    },
+                    reward: () => { game.perClick *= 1.5; }
+                },
+                {
+                    id: "ach3",
+                    name: "Первый престиж",
+                    description: "Выполнить первый престиж",
+                    unlocked: false,
+                    condition: () => game.totalPrestigePoints > 0,
+                    reward: () => { game.multiplier += 0.5; }
+                },
+                {
+                    id: "ach4",
+                    name: "Ранг 5",
+                    description: "Достичь 5 ранга",
+                    unlocked: false,
+                    condition: () => game.rank >= 5,
+                    reward: () => { game.multiplier *= 2; }
+                },
+                {
+                    id: "ach5",
+                    name: "Миллионер",
+                    description: "Набрать 1,000,000 очков",
+                    unlocked: false,
+                    condition: () => game.totalPoints >= 1000000,
+                    reward: () => { game.perSecond *= 2; }
+                }
+            ];
+        }
+        
+        // Инициализация DOM-элементов
+        function initDOM() {
+            // Инициализация обработчиков вкладок
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    this.classList.add('active');
+                    document.getElementById(this.dataset.tab).classList.add('active');
+                });
+            });
+            
+            // Главная кнопка
+            document.getElementById('mainButton').addEventListener('click', function() {
+                generatePoints();
+                createCurrencyEffect(this);
+            });
+            
+            // Кнопки сброса
+            document.getElementById('prestigeButton').addEventListener('click', doPrestige);
+            document.getElementById('softResetButton').addEventListener('click', doSoftReset);
+            document.getElementById('hardResetButton').addEventListener('click', doHardReset);
+            document.getElementById('boostButton').addEventListener('click', activateBoost);
+            document.getElementById('rankUpButton').addEventListener('click', rankUp);
+            
+            // Закрытие модального окна
+            document.querySelector('.close').addEventListener('click', function() {
+                document.getElementById('winModal').style.display = 'none';
+            });
+            
+            // Построение улучшений
+            renderUpgrades();
+        }
+        
+        // Функция рендеринга улучшений
+        function renderUpgrades() {
+            renderUpgradeGroup('basic-upgrades-container', game.basicUpgrades, 'points');
+            renderUpgradeGroup('generator-upgrades-container', game.generatorUpgrades, 'points');
+            renderUpgradeGroup('multiplier-upgrades-container', game.multiplierUpgrades, 'points');
+            renderUpgradeGroup('prestige-upgrades-container', game.prestigeUpgrades, 'prestige');
+            renderUpgradeGroup('reset-upgrades-container', game.resetUpgrades, 'prestige');
+            renderRankUpgrades();
+            renderAchievements();
+        }
+        
+        // Рендеринг группы улучшений
+        function renderUpgradeGroup(containerId, upgrades, currency) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            for (let upgrade of upgrades) {
+                // Проверка разблокировки
+                let isUnlocked = typeof upgrade.unlocked === 'function' ? upgrade.unlocked() : upgrade.unlocked;
+                if (!isUnlocked) continue;
+                
+                // Стоимость улучшения
+                let cost = upgrade.baseCost * Math.pow(upgrade.costMultiplier, upgrade.level);
+                if (upgrade.costMultiplier === 0) cost = upgrade.baseCost;
+                
+                // Максимальный уровень
+                let isMaxed = upgrade.level >= upgrade.maxLevel;
+                
+                // Создание элемента улучшения
+                const upgradeElement = document.createElement('div');
+                upgradeElement.className = 'upgrade';
+                if (isMaxed) {
+                    upgradeElement.classList.add('upgrade-maxed');
+                } else if ((currency === 'points' && cost > game.points) || 
+                           (currency === 'prestige' && cost > game.prestigePoints)) {
+                    upgradeElement.classList.add('upgrade-locked');
+                }
+                
+                upgradeElement.innerHTML = `
+                    <div class="upgrade-name">${upgrade.name}</div>
+                    <div class="upgrade-description">${upgrade.description}</div>
+                    <div class="upgrade-cost">${isMaxed ? 'МАКС' : formatNumber(Math.floor(cost)) + (currency === 'prestige' ? ' престиж' : '')}</div>
+                    <div class="upgrade-level">Ур. ${upgrade.level}/${upgrade.maxLevel}</div>
+                `;
+                
+                // Обработчик клика
+                if (!isMaxed) {
+                    upgradeElement.addEventListener('click', function() {
+                        buyUpgrade(upgrade, cost, currency);
+                    });
+                }
+                
+                container.appendChild(upgradeElement);
+            }
+        }
+        
+        // Рендеринг ранговых улучшений
+        function renderRankUpgrades() {
+            const container = document.getElementById('rank-upgrades-container');
+            container.innerHTML = '';
+            
+            for (let upgrade of game.rankUpgrades) {
+                // Проверка разблокировки
+                let isUnlocked = typeof upgrade.unlocked === 'function' ? upgrade.unlocked() : upgrade.unlocked;
+                if (!isUnlocked) continue;
+                
+                // Создание элемента улучшения
+                const upgradeElement = document.createElement('div');
+                upgradeElement.className = 'upgrade';
+                upgradeElement.classList.add('upgrade-maxed'); // Ранговые улучшения всегда максимальны
+                
+                upgradeElement.innerHTML = `
+                    <div class="upgrade-name">${upgrade.name}</div>
+                    <div class="upgrade-description">${upgrade.description}</div>
+                    <div class="upgrade-cost">Требуется ранг ${upgrade.requiredRank}</div>
+                    <div class="upgrade-level">Активно</div>
+                `;
+                
+                container.appendChild(upgradeElement);
+            }
+        }
+        
+        // Рендеринг достижений
+        function renderAchievements() {
+            const container = document.getElementById('achievements-container');
+            container.innerHTML = '';
+            
+            for (let achievement of game.achievements) {
+                const achievementElement = document.createElement('div');
+                achievementElement.className = 'upgrade';
+                if (achievement.unlocked) {
+                    achievementElement.classList.add('upgrade-maxed');
+                } else {
+                    achievementElement.classList.add('upgrade-locked');
+                }
+                
+                achievementElement.innerHTML = `
+                    <div class="upgrade-name">${achievement.name}</div>
+                    <div class="upgrade-description">${achievement.description}</div>
+                    <div class="upgrade-cost">${achievement.unlocked ? 'Получено' : 'Не получено'}</div>
+                `;
+                
+                container.appendChild(achievementElement);
+            }
+        }
+        
+        // Покупка улучшения
+        function buyUpgrade(upgrade, cost, currency) {
+            // Проверка доступности ресурсов
+            if (currency === 'points' && game.points < cost) return;
+            if (currency === 'prestige' && game.prestigePoints < cost) return;
+            
+            // Проверка максимального уровня
+            if (upgrade.level >= upgrade.maxLevel) return;
+            
+            // Списание валюты
+            if (currency === 'points') {
+                game.points -= cost;
+            } else if (currency === 'prestige') {
+                game.prestigePoints -= cost;
+            }
+            
+            // Повышение уровня и применение эффекта
+            upgrade.level++;
+            if (typeof upgrade.effect === 'function') {
+                upgrade.effect();
+            }
+            
+            // Обновление интерфейса
+            updateStats();
+            renderUpgrades();
+            showNotification(`Куплено: ${upgrade.name}`);
+        }
+        
+        // Генерация очков при клике
+        function generatePoints() {
+            let amount = game.perClick * game.multiplier;
+            if (game.hasBoost) amount *= 2;
+            
+            game.points += amount;
+            game.totalPoints += amount;
+            
+            updateStats();
+            checkAchievements();
+        }
+        
+        // Генерация очков в секунду
+        function generatePerSecond() {
+            if (game.perSecond > 0) {
+                let amount = game.perSecond * game.multiplier / 10; // Делим на 10, так как вызываем 10 раз в секунду
+                if (game.hasBoost) amount *= 2;
+                
+                game.points += amount;
+                game.totalPoints += amount;
+                
+                updateStats();
+                checkAchievements();
+            }
+            
+            // Проверка буста
+            if (game.hasBoost && Date.now() > game.boostEndTime) {
+                game.hasBoost = false;
+                showNotification("Буст закончился!");
+                updateStats();
+            }
+        }
+        
+        // Обновление статистики
+        function updateStats() {
+            document.getElementById('points').textContent = formatNumber(Math.floor(game.points));
+            document.getElementById('perClick').textContent = formatNumber(Math.floor(game.perClick * game.multiplier * (game.hasBoost ? 2 : 1)));
+            document.getElementById('perSecond').textContent = formatNumber(Math.floor(game.perSecond * game.multiplier * (game.hasBoost ? 2 : 1)));
+            document.getElementById('multiplier').textContent = formatNumber(game.multiplier * (game.hasBoost ? 2 : 1)) + 'x';
+            document.getElementById('prestige').textContent = formatNumber(game.prestigePoints);
+            
+            // Обновление информации о ранге
+            document.getElementById('rank').textContent = `Ранг ${game.rank}`;
+            document.getElementById('currentRank').textContent = game.rank;
+            
+            // Расчет требований для следующего ранга
+            let nextRankRequirement = Math.floor(100 * Math.pow(3, game.rank - 1));
+            document.getElementById('rankRequirement').textContent = formatNumber(nextRankRequirement);
+            
+            // Расчет престиж-очков при сбросе
+            let prestigeGain = calculatePrestigeGain();
+            document.getElementById('prestigeGain').textContent = formatNumber(prestigeGain);
+            
+            // Активация/деактивация кнопок
+            document.getElementById('prestigeButton').disabled = prestigeGain <= 0;
+            document.getElementById('rankUpButton').disabled = game.prestigePoints < nextRankRequirement;
+        }
+        
+        // Расчет престиж-очков
+        function calculatePrestigeGain() {
+            if (game.points < 10000) return 0;
+            
+            let prestigePointsGain = Math.floor(Math.sqrt(game.points / 10000));
+            
+            // Бонус от престиж-улучшения "Престиж-бустер"
+            let prestigeBooster = game.prestigeUpgrades.find(u => u.id === "prest4");
+            if (prestigeBooster && prestigeBooster.level > 0) {
+                prestigePointsGain = Math.floor(prestigePointsGain * (1 + 0.5 * prestigeBooster.level));
+            }
+            
+            return prestigePointsGain;
+        }
+        
+        // Выполнение престижа
+        function doPrestige() {
+            let prestigeGain = calculatePrestigeGain();
+            if (prestigeGain <= 0) return;
+            
+            // Сохранение престиж-улучшений
+            let prestigeUpgrades = JSON.parse(JSON.stringify(game.prestigeUpgrades));
+            let resetUpgrades = JSON.parse(JSON.stringify(game.resetUpgrades));
+            let rankUpgrades = JSON.parse(JSON.stringify(game.rankUpgrades));
+            let rank = game.rank;
+            let totalPrestigePoints = game.totalPrestigePoints + prestigeGain;
+            
+            // Сброс игры
+            game = {
+                points: 0,
+                totalPoints: 0,
+                perClick: 1,
+                perSecond: 0,
+                multiplier: 1,
+                prestigePoints: game.prestigePoints + prestigeGain,
+                totalPrestigePoints: totalPrestigePoints,
+                rank: rank,
+                hasBoost: false,
+                boostEndTime: 0,
+                achievements: game.achievements
+            };
+            
+            // Восстановление улучшений
+            game.prestigeUpgrades = prestigeUpgrades;
+            game.resetUpgrades = resetUpgrades;
+            game.rankUpgrades = rankUpgrades;
+            
+            // Инициализация других улучшений
+            initUpgrades();
+            
+            // Применение эффектов престиж-улучшений при сбросе
+            for (let upgrade of game.prestigeUpgrades) {
+                if (upgrade.level > 0 && typeof upgrade.effectOnPrestige === 'function') {
+                    upgrade.effectOnPrestige();
+                }
+            }
+            
+            // Применение эффектов ранговых улучшений
+            for (let upgrade of game.rankUpgrades) {
+                if (upgrade.level > 0 && game.rank >= upgrade.requiredRank && typeof upgrade.effect === 'function') {
+                    upgrade.effect();
+                }
+            }
+            
+            // Обновление интерфейса
+            updateStats();
+            renderUpgrades();
+            showNotification(`Престиж выполнен! +${prestigeGain} престиж-очков`);
+        }
+        
+        // Мягкий сброс (сохраняет престиж и ранг)
+        function doSoftReset() {
+            if (!confirm("Вы уверены, что хотите выполнить мягкий сброс? Вы потеряете все очки, но сохраните престиж и ранг.")) {
+                return;
+            }
+            
+            // Сохранение престиж-данных
+            let prestigePoints = game.prestigePoints;
+            let totalPrestigePoints = game.totalPrestigePoints;
+            let prestigeUpgrades = JSON.parse(JSON.stringify(game.prestigeUpgrades));
+            let resetUpgrades = JSON.parse(JSON.stringify(game.resetUpgrades));
+            let rankUpgrades = JSON.parse(JSON.stringify(game.rankUpgrades));
+            let rank = game.rank;
+            let achievements = game.achievements;
+            
+            // Сброс игры
+            game = {
+                points: 0,
+                totalPoints: 0,
+                perClick: 1,
+                perSecond: 0,
+                multiplier: 1,
+                prestigePoints: prestigePoints,
+                totalPrestigePoints: totalPrestigePoints,
+                rank: rank,
+                hasBoost: false,
+                boostEndTime: 0,
+                achievements: achievements
+            };
+            
+            // Восстановление улучшений
+            game.prestigeUpgrades = prestigeUpgrades;
+            game.resetUpgrades = resetUpgrades;
+            game.rankUpgrades = rankUpgrades;
+            
+            // Инициализация других улучшений
+            initUpgrades();
+            
+            // Применение эффектов престиж-улучшений при сбросе
+            for (let upgrade of game.prestigeUpgrades) {
+                if (upgrade.level > 0 && typeof upgrade.effectOnPrestige === 'function') {
+                    upgrade.effectOnPrestige();
+                }
+            }
+            
+            // Применение эффектов ранговых улучшений
+            for (let upgrade of game.rankUpgrades) {
+                if (upgrade.level > 0 && game.rank >= upgrade.requiredRank && typeof upgrade.effect === 'function') {
+                    upgrade.effect();
+                }
+            }
+            
+            // Бонус за сброс
+            game.multiplier *= 1.5;
+            
+            // Обновление интерфейса
+            updateStats();
+            renderUpgrades();
+            showNotification("Мягкий сброс выполнен! Множитель +50%");
+        }
+        
+        // Полный сброс (сбрасывает всё)
+        function doHardReset() {
+            if (!confirm("ВНИМАНИЕ! Вы уверены, что хотите выполнить полный сброс? Вы потеряете ВСЕ данные и начнёте с начала!")) {
+                return;
+            }
+            
+            // Полный сброс игры
+            game = {
+                points: 0,
+                totalPoints: 0,
+                perClick: 1,
+                perSecond: 0,
+                multiplier: 1,
+                prestigePoints: 0,
+                totalPrestigePoints: 0,
+                rank: 1,
+                hasBoost: false,
+                boostEndTime: 0,
+                achievements: []
+            };
+            
+            // Инициализация улучшений заново
+            initUpgrades();
+            
+            // Обновление интерфейса
+            updateStats();
+            renderUpgrades();
+            showNotification("Полный сброс выполнен! Игра начата заново.");
+        }
+        
+        // Активация временного буста
+        function activateBoost() {
+            if (game.hasBoost) {
+                showNotification("Буст уже активен!");
+                return;
+            }
+            
+            game.hasBoost = true;
+            game.boostEndTime = Date.now() + 30000; // 30 секунд
+            
+            updateStats();
+            showNotification("Буст активирован! x2 на 30 секунд");
+        }
+        
+        // Повышение ранга
+        function rankUp() {
+            let nextRankRequirement = Math.floor(100 * Math.pow(3, game.rank - 1));
+            
+            if (game.prestigePoints < nextRankRequirement) {
+                showNotification("Недостаточно престиж-очков для повышения ранга!");
+                return;
+            }
+            
+            // Повышение ранга
+            game.rank++;
+            
+            // Проверка победы
+            if (game.rank >= 20) {
+                showWinScreen();
+            }
+            
+            // Обновление интерфейса
+            updateStats();
+            renderUpgrades();
+            showNotification(`Поздравляем! Ваш новый ранг: ${game.rank}`);
+        }
+        
+        // Проверка достижений
+        function checkAchievements() {
+            for (let achievement of game.achievements) {
+                if (!achievement.unlocked && achievement.condition()) {
+                    achievement.unlocked = true;
+                    if (typeof achievement.reward === 'function') {
+                        achievement.reward();
+                    }
+                    showNotification(`Достижение получено: ${achievement.name}!`);
+                    renderAchievements();
+                }
+            }
+        }
+        
+        // Показать уведомление
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Создание эффекта падающей валюты
+        function createCurrencyEffect(button) {
+            const effect = document.createElement('div');
+            effect.className = 'currency-drop';
+            effect.textContent = '+' + formatNumber(Math.floor(game.perClick * game.multiplier * (game.hasBoost ? 2 : 1)));
+            
+            const rect = button.getBoundingClientRect();
+            effect.style.left = (rect.left + rect.width / 2) + 'px';
+            effect.style.top = rect.top + 'px';
+            
+            document.body.appendChild(effect);
+            
+            setTimeout(() => {
+                effect.remove();
+            }, 1500);
+        }
+        
+        // Показать экран победы
+        function showWinScreen() {
+            document.getElementById('winModal').style.display = 'block';
+            document.getElementById('certificateLink').href = `https://example.com/certificate?name=${encodeURIComponent('Player')}&rank=20`;
+        }
+        
+        // Форматирование числа
+        function formatNumber(num) {
+            if (num < 1000) return num.toFixed(0);
+            if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
+            if (num < 1000000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num < 1000000000000) return (num / 1000000000).toFixed(1) + 'B';
+            return (num / 1000000000000).toFixed(1) + 'T';
+        }
+        
+        // Инициализация игры
+        function init() {
+            initUpgrades();
+            initDOM();
+            updateStats();
+            
+            // Основной игровой цикл (10 раз в секунду)
+            setInterval(generatePerSecond, 100);
+        }
+        
+        // Запуск игры
+        window.onload = init;
+    </script>
+</body>
+</html>
